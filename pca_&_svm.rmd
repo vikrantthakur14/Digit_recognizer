@@ -54,23 +54,27 @@ train.data$label=as.factor(train.data$label)
 ```
 Optimizing number of components to be selected
 ```{r}
-SVM = function(x){
-    obj=svm(label~.,data=train.data[,1:x])
-    return (predict(obj,newdata=train.data[1:100,2:x]))
-}
-no_of_components=c(10,25,50,100)
-tested=data.frame(labels=train.data$label[1:100])
-for (i in no_of_components){
-    mylabels=SVM(i)
-    tested=cbind(tested,mylabels)
-    paste(i,sum(diag(table(tested$labels,tested$mylabels))))
-}
+#SVM = function(x){
+#    obj=svm(label~.,data=train.data[,1:x])
+#    return (predict(obj,newdata=train.data[1:100,2:x]))
+#}
+#no_of_components=c(10,25,50,100)
+#tested=data.frame(labels=train.data$label[1:100])
+#for (i in no_of_components){
+#    mylabels=SVM(i)
+#    tested=cbind(tested,mylabels)
+#    paste(i,sum(diag(table(tested$labels,tested$mylabels))))
+#}
 ```
 
 
-Applying SVM on the chosen components
+Applying SVM alongwith tuning of hyperparameters on the chosen components(50) 
 ```{r}
-obj=svm(label~.,data=train.data[,1:51])       ## 50 principal components 
+svm_tune=tune(svm,label~.,data=train.data[sample(1:42000,1000),1:51],kernel="radial",ranges=list(cost=10^(-1:2),gamma=2^(-6:1)))
+str(svm_tune)
+
+# Optimal cost=10, gamma=0.0325
+obj=svm(label~.,data=train.data[,1:51],cost=10,gamma=0.0325)       ## 50 principal components 
 subm = data.frame(ImageId=1:nrow(test),Label=predict(obj,newdata=test.data[,1:50]))
 write.csv(subm,'/kaggle/working/svmsub.csv',row.names=F)
 ```
