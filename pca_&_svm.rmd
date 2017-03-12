@@ -1,5 +1,6 @@
 # Digit Recognizer
 
+```{r}
 library(caret)
 library(e1071)
 
@@ -53,3 +54,4 @@ train.data$label=as.factor(train.data$label)
 obj=svm(label~.,data=train.data[,1:51])       ## 50 principal components 
 subm = data.frame(ImageId=1:nrow(test),Label=predict(obj,newdata=test.data[,1:50]))
 write.csv(subm,'/kaggle/working/svmsub.csv',row.names=F)
+```
