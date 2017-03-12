@@ -1,56 +1,75 @@
 # Digit Recognizer
-
+This is a simple model to recognize grayscale images of digits 0-9
 ```{r}
+# Loading required packages
 library(caret)
 library(e1071)
 
-####### Reading in data
+# Reading in data and viewing its summary
 train=read.csv("../input/train.csv")
 test=read.csv("../input/test.csv")
-test$label=1
+dim(train);dim(test)
+summary(train)
+```
+The above data is loaded from the kaggle competition page https://www.kaggle.com/c/digit-recognizer/data
 
+```{r}
+test$label=1                                # Adding label column in the test dataset
+# Combining data
 comb_data=rbind(train,test)
 comb_data$label=as.factor(comb_data$label)
-pca.train=comb_data[1:nrow(train),-1]
-pca.test=comb_data[42001:nrow(comb_data),-1]
+```
 
-####### Data Preprocessing
-# all pixels having 0 variance are removed
+Data Preprocessing
+```{r}
+# All pixels having 0 variance are removed
 store=c(1)
 for(i in 2:785){
   if (var(comb_data[,i])==0){store=append(store,i)}
 }
-####### PCA
+comb_data=comb_data[,-store]
+```
+Dimensionality reduction by PCA (Principal Component Analysis)
+```{r}
+pca.train=comb_data[1:nrow(train),]
+pca.test=comb_data[42001:nrow(comb_data),]
 prin_comp=prcomp(pca.train)
-std_dev <- prin_comp$sdev
-pr_var <- std_dev^2
-prop_varex <- pr_var/sum(pr_var)
-
-####### Visualizing PC's
+std_dev = prin_comp$sdev
+pr_var = std_dev^2
+prop_varex = pr_var/sum(pr_var)
+```
+Visualizing Principal Components
+```{r}
 plot(prop_varex, xlab = "Principal Component",ylab = "Proportion of Variance Explained")
 plot(cumsum(prop_varex), xlab = "Principal Component",ylab = "Cumulative Proportion of Variance Explained",type = "b")
-
+```
+Obtaining training and test data with variables as principal components
+```{r}
 train.data=data.frame(label=train$label,predict(prin_comp,pca.train))
 test.data=data.frame(predict(prin_comp,pca.test))
 
 rownames(test.data)=NULL
 head(test.data)
 train.data$label=as.factor(train.data$label)
+```
+Optimizing number of components to be selected
+```{r}
+SVM = function(x){
+    obj=svm(label~.,data=train.data[,1:x])
+    return (predict(obj,newdata=train.data[1:500,2:x]))
+}
+no_of_components=c(10,25,50,100)
+tested=data.frame(labels=train.data$label[1:500])
+for (i in no_of_components){
+    mylabels=SVM(i)
+    tested=cbind(tested,mylabels)
+    sum(diag(table(tested$labels,tested$mylabels)))
+}
+```
 
-####### Optimization of no.of.components
-# SVM = function(x){
-#     obj=svm(label~.,data=train.data[,1:x])
-#     return (predict(obj,newdata=train.data[1:100,2:x]))
-# }
-# no_of_components=c(10,25,50,100)
-# store=data.frame(labels=train.data$label[1:100])
-# for (i in no_of_components){
-#     mylabels=SVM(i)
-#    store=cbind(store,mylabels)
-#    table(store$labels,store$mylabels)
-# }
 
-####### SVM
+Applying SVM on the chosen components
+```{r}
 obj=svm(label~.,data=train.data[,1:51])       ## 50 principal components 
 subm = data.frame(ImageId=1:nrow(test),Label=predict(obj,newdata=test.data[,1:50]))
 write.csv(subm,'/kaggle/working/svmsub.csv',row.names=F)
