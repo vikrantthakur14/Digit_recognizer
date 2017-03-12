@@ -56,14 +56,14 @@ Optimizing number of components to be selected
 ```{r}
 SVM = function(x){
     obj=svm(label~.,data=train.data[,1:x])
-    return (predict(obj,newdata=train.data[1:500,2:x]))
+    return (predict(obj,newdata=train.data[1:100,2:x]))
 }
 no_of_components=c(10,25,50,100)
-tested=data.frame(labels=train.data$label[1:500])
+tested=data.frame(labels=train.data$label[1:100])
 for (i in no_of_components){
     mylabels=SVM(i)
     tested=cbind(tested,mylabels)
-    sum(diag(table(tested$labels,tested$mylabels)))
+    paste(i,sum(diag(table(tested$labels,tested$mylabels))))
 }
 ```
 
